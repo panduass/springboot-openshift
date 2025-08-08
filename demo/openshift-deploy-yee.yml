@@ -1,0 +1,92 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: springboot-app
+  labels:
+    app: springboot-app
+
+
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: springboot-app
+  labels:
+    app: springboot-app
+spec:
+  source:
+    type: Binary
+    binary: {}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: "springboot-app:latest"
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "springboot-app:latest"
+
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: springboot-app
+  labels:
+    app: springboot-app
+spec:
+  replicas: 1
+  selector:
+    app: springboot-app
+    deploymentconfig: springboot-app
+  template:
+    metadata:
+      labels:
+        app: springboot-app
+        deploymentconfig: springboot-app
+    spec:
+      containers:
+        - name: springboot-app
+          image: "springboot-app:latest"
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - springboot-app
+        from:
+          kind: ImageStreamTag
+          name: "springboot-app:latest"
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: springboot-app
+  labels:
+    app: springboot-app
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    deploymentconfig: springboot-app
+
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: springboot-app
+  labels:
+    app: springboot-app
+spec:
+  to:
+    kind: Service
+    name: springboot-app
+    weight: 100
+  port:
+    targetPort: 8080
