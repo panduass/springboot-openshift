@@ -1,0 +1,6 @@
+services:
+  springboot-app-openshift:
+    image: panduass/springboot-openshift:second
+    ports:
+      - "8080:8080"
+      - "5000:5000"
